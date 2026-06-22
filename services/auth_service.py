@@ -1,10 +1,11 @@
 import sqlite3
 import bcrypt
-from datetime import datetime
+from datetime import datetime, timedelta
 
 DB_PATH = "database/railway_pf.db"
 
 MAX_FAILED_ATTEMPTS = 3
+LOCKOUT_DURATION_MINUTES = 5
 
 
 def get_connection():
@@ -26,7 +27,7 @@ def log_login_attempt(employee_id, status):
         VALUES (?, ?, ?)
     """, (
         employee_id,
-        datetime.now(),
+        datetime.now().isoformat(),
         status
     ))
 
@@ -44,8 +45,11 @@ def get_failed_attempts(employee_id):
         FROM login_audit
         WHERE employee_id = ?
         ORDER BY id DESC
-        LIMIT 3
-    """, (employee_id,))
+        LIMIT ?
+    """, (
+        employee_id,
+        MAX_FAILED_ATTEMPTS
+    ))
 
     rows = cursor.fetchall()
 
@@ -54,6 +58,7 @@ def get_failed_attempts(employee_id):
     count = 0
 
     for row in rows:
+
         if row[0] == "FAILED":
             count += 1
         else:
@@ -64,20 +69,71 @@ def get_failed_attempts(employee_id):
 
 def is_locked_out(employee_id):
 
-    failed_attempts = get_failed_attempts(
-        employee_id
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT login_time, status
+        FROM login_audit
+        WHERE employee_id = ?
+        ORDER BY id DESC
+        LIMIT ?
+    """, (
+        employee_id,
+        MAX_FAILED_ATTEMPTS
+    ))
+
+    rows = cursor.fetchall()
+
+    conn.close()
+
+    if len(rows) < MAX_FAILED_ATTEMPTS:
+        return False, 0
+
+    for row in rows:
+        if row[1] != "FAILED":
+            return False, 0
+
+    latest_failure_time = datetime.fromisoformat(
+        rows[0][0]
     )
 
-    return failed_attempts >= MAX_FAILED_ATTEMPTS
+    unlock_time = (
+        latest_failure_time
+        + timedelta(
+            minutes=LOCKOUT_DURATION_MINUTES
+        )
+    )
+
+    if datetime.now() < unlock_time:
+
+        minutes_remaining = max(
+            1,
+            int(
+                (
+                    unlock_time
+                    - datetime.now()
+                ).total_seconds() / 60
+            )
+        )
+
+        return True, minutes_remaining
+
+    return False, 0
 
 
 def verify_pin(employee_id, entered_pin):
 
-    if is_locked_out(employee_id):
+    locked, minutes_remaining = is_locked_out(
+        employee_id
+    )
+
+    if locked:
 
         return {
             "success": False,
-            "message": "Account Locked"
+            "message":
+            f"Account Locked. Try again in {minutes_remaining} minute(s)."
         }
 
     conn = get_connection()
@@ -126,12 +182,26 @@ def verify_pin(employee_id, entered_pin):
             "FAILED"
         )
 
-        remaining = (
-            MAX_FAILED_ATTEMPTS
-            - get_failed_attempts(employee_id)
+        failed_attempts = get_failed_attempts(
+            employee_id
         )
+
+        remaining = max(
+            0,
+            MAX_FAILED_ATTEMPTS
+            - failed_attempts
+        )
+
+        if remaining == 0:
+
+            return {
+                "success": False,
+                "message":
+                f"Account Locked for {LOCKOUT_DURATION_MINUTES} minutes."
+            }
 
         return {
             "success": False,
-            "message": f"Invalid PIN. {remaining} attempts remaining."
+            "message":
+            f"Invalid PIN. {remaining} attempts remaining."
         }
