@@ -44,6 +44,8 @@ def get_india_svg() -> str:
     except Exception:
         pass
     return result
+
+
 # Simple fallback if network is unavailable
 _FALLBACK_SVG = """
 <svg viewBox="0 0 612 696" xmlns="http://www.w3.org/2000/svg">
