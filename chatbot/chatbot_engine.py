@@ -20,6 +20,7 @@ from services.response_service import (
 )
 
 
+
 def generate_response(user_input: str):
     """Returns (content: str, is_html: bool, chips: list[str])"""
     raw   = user_input.strip()
