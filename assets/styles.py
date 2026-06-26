@@ -39,11 +39,14 @@ def get_css():
         left: 50%;
         transform: translate(-50%, -50%);
         width: min(62vw, 440px);
-        opacity= 0.015;
+        opacity= 0.12;
         filter:
+        sepia(100%)
+        hue-rotate(65deg)
+        saturate(500%)
         grayscale(100%)
-        brightness(180%)
-        contrast(60%);
+        brightness(55%)
+        contrast(130%);
         
         
     }
@@ -53,7 +56,13 @@ def get_css():
         top: 51%;
         transform: translateY(-50%);
         animation: trainRide 55s linear infinite;
-        opacity: 0.08;
+        opacity: 0.25;
+        filter:
+        sepia(100%)
+        hue-rotate(65deg)
+        saturate(500%)
+        brightness(50%)
+        contrast(140%);
     }
     @keyframes trainRide {
         0%   { left: -340px; }
