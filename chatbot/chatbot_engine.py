@@ -93,11 +93,21 @@ def generate_response(user_input: str):
                 ["Salary Details", "PF Details"]
             )
         elif intent == "salary_history":
-            st.session_state.phase = "done"
-            raw = "salary history"
+            st.session_state.requested_service = "salary_history"
+            st.session_state.phase = "awaiting_pin"
+            return (
+                "🔐 Please enter your 4-digit PIN to access Salary History.",
+                False,
+                []
+            )
         elif intent == "pf_history":
-            st.session_state.phase = "done"
-            raw = "pf history"
+            st.session_state.requested_service = "pf_history"
+            st.session_state.phase = "awaiting_pin"
+            return (
+                "🔐 Please enter your 4-digit PIN to access PF History.",
+                False,
+                []
+            )
         else:
             return (
                 "Sorry, I couldn't understand your request.",
@@ -168,6 +178,36 @@ def generate_response(user_input: str):
                 True,
                 ["View Salary Again", "Salary History", "PF Info", "PF History", "Contact HR", "Start Over"]
             )
+        if requested_service == "salary_history":
+            history = get_salary_history(st.session_state.emp_id)
+            response = (
+                "**📊 Salary History**\n\n"
+                "| Month | Gross Salary | Net Salary |\n"
+                "|---|---|---|\n"
+            )
+            month_names = [
+                "", "Jan", "Feb", "Mar", "Apr",
+                "May", "Jun", "Jul", "Aug",
+                "Sep", "Oct", "Nov", "Dec"
+            ]
+            for row in history:
+                response += (
+                    f"| {month_names[row[0]]} {row[1]} | "
+                    f"{fmt(int(row[2]))} | "
+                    f"{fmt(int(row[3]))} |\n"
+                )
+                return (
+                    response,
+                    False,
+                    [
+                        "View Salary Again",
+                        "Salary History",
+                        "PF Info",
+                        "PF History",
+                        "Contact HR",
+                        "Start Over"
+                    ]
+                )
         
         
         
@@ -180,6 +220,38 @@ def generate_response(user_input: str):
                 f"Last Updated: {emp['pf_last_updated']}",
                 False,["View Salary Again", "Salary History", "PF History", "Contact HR", "Start Over"]
             )
+        if requested_service == "pf_history":
+            transactions = get_pf_transactions(st.session_state.emp_id)
+            response = (
+                "**🏦 PF Transaction History**\n\n"
+                "| Month | Contribution | Interest | Balance |\n"
+                "|---|---|---|---|\n"
+            )
+            month_names = [
+                "",
+                "Jan", "Feb", "Mar", "Apr",
+                "May", "Jun", "Jul", "Aug",
+                "Sep", "Oct", "Nov", "Dec"
+            ]
+            for row in transactions:
+                response += (
+                    f"| {month_names[row[0]]} {row[1]} "
+                    f"| {fmt(int(row[2]))} "
+                    f"| {fmt(int(row[3]))} "
+                    f"| {fmt(int(row[4]))} |\n"
+                )
+                return (
+                    response,
+                    False,
+                    [
+                        "View Salary Again",
+                        "Salary History",
+                        "PF Info",
+                        "PF History",
+                        "Contact HR",
+                        "Start Over"
+                    ]
+                )
 
 
         # Post-login options
