@@ -28,7 +28,7 @@ fake = Faker("en_IN")
 conn = sqlite3.connect("database/railway_pf.db")
 cursor = conn.cursor()
 
-NUM_EMPLOYEES = 10
+NUM_EMPLOYEES = 200
 
 os.makedirs("demo_data", exist_ok=True)
 
