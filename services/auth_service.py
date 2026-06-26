@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 DB_PATH = "database/railway_pf.db"
 
 MAX_FAILED_ATTEMPTS = 3
-LOCKOUT_DURATION_MINUTES = 5
+LOCKOUT_DURATION_MINUTES = 2
 
 
 def get_connection():
